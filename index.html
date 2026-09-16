@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>ASTROBOT</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
+
+        .tela {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, #05051a, #000);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 200; transition: opacity 0.4s ease;
+        }
+        .escondida { opacity: 0; pointer-events: none; }
+        .logo { 
+            font-size: 2.8rem; font-weight: bold; letter-spacing: 3px; margin-bottom: 10px;
+            text-shadow: 0 0 15px #0099ff, 0 0 30px #0066cc; 
+        }
+        .lema { font-size: 1rem; color: #66ccff; margin-bottom: 35px; font-style: italic; }
+        .caixa { width: 90%; max-width: 400px; }
+        .titulo { font-size: 1.2rem; margin-bottom: 15px; text-align: center; }
+        .saudacao { font-size: 1.3rem; color: #66ccff; margin-bottom: 15px; text-align: center; }
+        .info-email { 
+            font-size: 0.9rem; color: #888; margin-bottom: 20px; text-align: center;
+            padding: 10px; background: #111; border-radius: 8px;
+        }
+        .campo {
+            width: 100%; background: #111; border: 1px solid #333; color: #fff;
+            padding: 14px 18px; border-radius: 10px; font-size: 1rem; margin-bottom: 12px;
+        }
+        .aviso { color: #ff6666; font-size: 0.9rem; margin: 8px 0; display: none; text-align: center; }
+        .sucesso { color: #00cc66; font-size: 0.9rem; margin: 8px 0; display: none; text-align: center; }
+        .codigo-oculto { 
+            font-family: monospace; color: #444; font-size: 0.7rem; 
+            text-align: center; margin: 5px 0 15px;
+        }
+        .aviso-tentativas { color: #ffaa00; font-size: 0.85rem; text-align: center; margin: 8px 0; display: none; }
+        .bloqueado {
+            color: #ff3333; font-weight: bold; text-align: center; margin: 10px 0; display: none;
+            padding: 12px; background: #220000; border-radius: 8px;
+        }
+        .botao {
+            width: 100%; padding: 15px; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; margin: 8px 0;
+            transition: transform 0.1s;
+        }
+        .botao:active { transform: scale(0.97); }
+        .primario { background: #0099ff; color: #fff; }
+        .secundario { background: #222; color: #66ccff; border: 1px solid #0099ff; }
+        .menor { 
+            font-size: 0.9rem; color: #666; margin-top: 10px; text-align: center; 
+            cursor: pointer; padding: 8px;
+        }
+        .menor:hover { color: #99ccff; }
+
+        /* TELA PRINCIPAL */
+        .cabecalho {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 18px; border-bottom: 1px solid #222;
+        }
+        .nome-app { font-size: 1.2rem; font-weight: bold; }
+        .btn-voz {
+            background: #333; border: none; color: #fff; padding: 8px 14px;
+            border-radius: 20px; font-size: 0.85rem; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-voz.ativo { background: #00cc66; box-shadow: 0 0 8px #00cc66; }
+        .pontos { font-size: 1.5rem; padding: 5px 15px; cursor: pointer; user-select: none; color: #888; }
+        .menu {
+            position: absolute; top: 55px; right: 15px; background: #111;
+            border: 1px solid #333; border-radius: 10px; min-width: 240px; z-index: 100; display: none;
+        }
+        .menu.aberto { display: block; }
+        .dados-conta { padding: 15px 20px; background: #0a0a1a; border-bottom: 1px solid #222; }
+        .nome-usuario { color: #fff; font-size: 1.1rem; margin-bottom: 5px; }
+        .email-conta { color: #66ccff; font-weight: bold; word-break: break-all; font-size: 0.9rem; }
+        .tipo-conta { font-size: 0.8rem; color: #666; margin-top: 5px; }
+        .item { 
+            padding: 14px 20px; cursor: pointer; border-bottom: 1px solid #222; 
+            font-size: 0.95rem;
+        }
+        .item:hover { background: #222; }
+        .conversa { flex: 1; padding: 20px; overflow-y: auto; background: #000; height: calc(100vh - 130px); }
+        .msg { margin-bottom: 18px; max-width: 85%; }
+        .msg.eu { margin-left: auto; background: #0066cc; border-radius: 18px 18px 5px 18px; padding: 14px 16px; }
+        .msg.ele { background: #1a1a2e; border-radius: 18px 18px 18px 5px; padding: 14px 16px; }
+        .etiqueta { font-size: 0.75rem; color: #666; margin-bottom: 4px; }
+        .pensando { color: #66ccff; font-style: italic; margin-top: 5px; }
+        .cursor {
+            display: inline-block; width: 8px; height: 18px; background: #66ccff;
+            margin-left: 3px; animation: piscar 0.8s infinite; vertical-align: middle;
+        }
+        @keyframes piscar { 50% { opacity: 0; } }
+        .base { 
+            position: fixed; bottom: 0; left: 0; right: 0; display: flex; 
+            padding: 12px; border-top: 1px solid #222; gap: 8px; background: #000; 
+        }
+        .entrada {
+            flex: 1; background: #111; border: 1px solid #333; color: #fff;
+            padding: 12px 16px; border-radius: 22px; font-size: 1rem; outline: none;
+        }
+        .enviar {
+            background: #0099ff; border: none; color: #fff; padding: 12px 18px;
+            border-radius: 50%; cursor: pointer; font-size: 1rem;
+        }
+        .escondido { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- TELA 1 — E-MAIL -->
+<div class="tela" id="telaEmail">
+    <div class="logo">ASTROBOT</div>
+    <p class="lema">"Penso antes de agir"</p>
+    <div class="caixa">
+        <p class="titulo">Digite seu e-mail</p>
+        <input type="email" class="campo" id="campoEmail" placeholder="ex: eric@gmail.com">
+        <p class="aviso" id="avisoEmailInvalido">❌ Digite um e-mail válido (com @ e .)</p>
+        <button class="botao primario" id="btnContinuar">Continuar →</button>
+        <button class="botao secundario" id="btnConvidado">👤 Entrar como Convidado</button>
+    </div>
+</div>
+
+<!-- TELA 2 — SENHA -->
+<div class="tela escondida" id="telaSenha">
+    <div class="logo">ASTROBOT</div>
+    <p class="saudacao" id="textoSaudacao">Olá!</p>
+    <p class="info-email" id="mostrarEmailAqui"></p>
+    <p class="codigo-oculto" id="codigoSeguranca">🔒 Código de segurança ativo</p>
+    <div class="caixa">
+        <input type="password" class="campo" id="campoSenha" placeholder="Digite sua senha">
+        <p class="aviso" id="avisoSenhaErrada">❌ Senha incorreta</p>
+        <p class="aviso-tentativas" id="avisoTentativas">⚠️ Tentativas restantes: 3</p>
+        <p class="bloqueado" id="avisoBloqueado">🔒 Bloqueado! Digite o código do e-mail:</p>
+        <input type="text" class="campo escondido" id="campoCodigo" placeholder="Código de 6 dígitos">
+        <button class="botao primario" id="btnEntrar">Entrar</button>
+        <p class="menor" id="btnEsqueci">Esqueci minha senha → enviar código</p>
+        <button class="botao secundario" id="btnVoltarEmail">← Voltar</button>
+    </div>
+</div>
+
+<!-- TELA PRINCIPAL -->
+<div id="telaPrincipal" class="escondida" style="flex-direction:column;">
+    <div class="cabecalho">
+        <button class="btn-voz" id="btnVoz">🔇 Texto</button>
+        <div class="nome-app">ASTROBOT</div>
+        <div class="pontos" id="btnMenu">⋮</div>
+    </div>
+    <div class="menu" id="menu">
+        <div class="dados-conta">
+            <div class="nome-usuario" id="mostrarNome">Convidado</div>
+            <div class="email-conta" id="mostrarEmailMenu">—</div>
+            <div class="tipo-conta" id="tipoConta">Acesso limitado</div>
+        </div>
+        <div class="item" id="itemSair">🚪 Sair</div>
+    </div>
+    <div class="conversa" id="conversa">
+        <div class="msg ele">
+            <div class="etiqueta">ASTROBOT</div>
+            Olá! Tô aqui! Pergunte qualquer coisa que eu pesquiso e te respondo!
+        </div>
+    </div>
+    <div class="base">
+        <input type="text" class="entrada" id="entrada" placeholder="Fale com o Astrobot...">
+        <button class="enviar" id="btnEnviar">➤</button>
+    </div>
+</div>
+
+<script>
+// ======================================
+// DADOS
+// ======================================
+let usuario = {
+    nome: "", email: "", tipo: "convidado", historico: [],
+    modoVoz: false, tentativas: 0, bloqueado: false, codigo: ""
+};
+
+const conhecimento = {
+    "oi": "Oi! Tô aqui! Tudo bem contigo?",
+    "olá": "Olá! Como vai você?",
+    "bom dia": "Bom dia! Que dia lindo pra criar coisas!",
+    "boa tarde": "Boa tarde! Tô pesquisando tudo pra você!",
+    "boa noite": "Boa noite! Descanse bem, tô aqui cuidando.",
+    "quem é você": "Eu sou o Astrobot, criado por Eric. Penso antes de agir e sou seu amigo.",
+    "obrigado": "De nada! Tô aqui pra isso sempre.",
+    "ajuda": "Pode mandar! Pesquiso e te respondo!",
+    "tchau": "Tchau! Tô te esperando quando voltar 💛",
+    "astrobot": "Estou aqui! Tô ouvindo!"
+};
+
+function gerarCodigo() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+function codificar(senha) { return btoa(senha); }
+function verificar(digitada, salva) { return btoa(digitada) === salva; }
+function carregarContas() { return JSON.parse(localStorage.getItem('astros_contas') || '{}'); }
+function salvarContas(c) { localStorage.setItem('astros_contas', JSON.stringify(c)); }
+function salvarSessao() { localStorage.setItem('astros_sessao', JSON.stringify(usuario)); }
+function sair() { localStorage.clear(); location.reload(); }
+
+// ======================================
+// TELA 1 — E-MAIL
+// ======================================
+document.getElementById('btnContinuar').addEventListener('click', () => {
+    const email = document.getElementById('campoEmail').value.trim();
+    esconderAvisos();
+    if (!email || !email.includes('@') || !email.includes('.')) {
+        document.getElementById('avisoEmailInvalido').style.display = "block";
+        return;
+    }
+    usuario.email = email;
+    usuario.nome = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
+    usuario.tentativas = 0;
+    usuario.bloqueado = false;
+
+    const contas = carregarContas();
+    if (!contas[email]) {
+        if (confirm(`Bem-vindo, ${usuario.nome}! Criar conta agora?`)) {
+            contas[email] = { nome: usuario.nome, senha: null };
+            salvarContas(contas);
+            usuario.tipo = "conta";
+            irSenha();
+        }
+    } else {
+        usuario.tipo = "conta";
+        irSenha();
+    }
+});
+
+document.getElementById('btnConvidado').addEventListener('click', () => {
+    usuario.nome = "Convidado";
+    usuario.email = "Convidado";
+    usuario.tipo = "convidado";
+    irPrincipal();
+});
+
+// ======================================
+// TELA 2 — SENHA
+// ======================================
+function irSenha() {
+    document.getElementById('telaEmail').classList.add('escondida');
+    const t = document.getElementById('telaSenha');
+    t.classList.remove('escondida');
+    document.getElementById('textoSaudacao').textContent = `Olá, ${usuario.nome}!`;
+    document.getElementById('mostrarEmailAqui').textContent = usuario.email;
+    document.getElementById('codigoSeguranca').textContent = "🔒 " + gerarCodigo() + "-" + gerarCodigo() + " [protegido]";
+    document.getElementById('avisoTentativas').style.display = "block";
+    document.getElementById('avisoTentativas').textContent = `⚠️ Tentativas restantes: ${3 - usuario.tentativas}`;
+    document.getElementById('campoCodigo').classList.add('escondido');
+    document.getElementById('avisoBloqueado').style.display = "none";
+    document.getElementById('campoSenha').value = "";
+    document.getElementById('campoCodigo').value = "";
+}
+
+document.getElementById('btnVoltarEmail').addEventListener('click', () => {
+    document.getElementById('telaSenha').classList.add('escondida');
+    document.getElementById('telaEmail').classList.remove('escondida');
+    esconderAvisos();
+});
+
+document.getElementById('btnEntrar').addEventListener('click', () => {
+    esconderAvisos();
+    const contas = carregarContas();
+    const conta = contas[usuario.email];
+
+    if (usuario.bloqueado) {
+        if (document.getElementById('campoCodigo').value.trim() === usuario.codigo) {
+            usuario.bloqueado = false;
+            usuario.tentativas = 0;
+            salvarSessao();
+            irPrincipal();
+        } else {
+            document.getElementById('avisoSenhaErrada').textContent = "❌ Código incorreto!";
+            document.getElementById('avisoSenhaErrada').style.display = "block";
+        }
+        return;
+    }
+
+    const senha = document.getElementById('campoSenha').value;
+    if (!conta.senha) {
+        if (senha.length < 4) { alert("Mínimo 4 caracteres!"); return; }
+        conta.senha = codificar(senha);
+        salvarContas(contas);
+        salvarSessao();
+        irPrincipal();
+        return;
+    }
+
+    if (verificar(senha, conta.senha)) {
+        usuario.tentativas = 0;
+        salvarSessao();
+        irPrincipal();
+    } else {
+        usuario.tentativas++;
+        document.getElementById('avisoSenhaErrada').style.display = "block";
+        if (usuario.tentativas >= 3) {
+            usuario.bloqueado = true;
+            usuario.codigo = gerarCodigo();
+            alert(`🔒 BLOQUEADO!\n\nCódigo enviado para:\n${usuario.email}\n\n👉 SEU CÓDIGO: ${usuario.codigo}`);
+            document.getElementById('avisoTentativas').style.display = "none";
+            document.getElementById('avisoBloqueado').style.display = "block";
+            document.getElementById('campoCodigo').classList.remove('escondido');
+        } else {
+            document.getElementById('avisoTentativas').textContent = `⚠️ Tentativas restantes: ${3 - usuario.tentativas}`;
+            document.getElementById('avisoTentativas').style.display = "block";
+        }
+    }
+});
+
+document.getElementById('btnEsqueci').addEventListener('click', () => {
+    usuario.codigo = gerarCodigo();
+    alert(`📧 Recuperação\n\nCódigo para: ${usuario.email}\n\n👉 ${usuario.codigo}`);
+    document.getElementById('campoCodigo').classList.remove('escondido');
+    document.getElementById('avisoBloqueado').style.display = "block";
+    usuario.bloqueado = true;
+});
+
+// ======================================
+// TELA PRINCIPAL — FUNCIONANDO
+// ======================================
+function irPrincipal() {
+    document.getElementById('telaEmail').classList.add('escondida');
+    document.getElementById('telaSenha').classList.add('escondida');
+    const t = document.getElementById('telaPrincipal');
+    t.classList.remove('escondida');
+    t.style.display = "flex";
+    document.getElementById('mostrarNome').textContent = usuario.nome;
+    document.getElementById('mostrarEmailMenu').textContent = usuario.email;
+    document.getElementById('tipoConta').textContent = 
+        usuario.tipo === "conta" ? "✅ Conta verificada" : "🔒 Convidado";
+    fala(`Olá ${usuario.nome}! Tô pronto pra conversar!`);
+}
+
+// ESCREVE LETRA POR LETRA
+function escrever(texto, elemento) {
+    let i = 0;
+    elemento.innerHTML = '<span class="cursor"></span>';
+    const id = setInterval(() => {
+        if (i < texto.length) {
+            elemento.innerHTML = texto.substring(0, i+1) + '<span class="cursor"></span>';
+            i++;
+        } else {
+            elemento.innerHTML = texto;
+            clearInterval(id);
+        }
+    }, 60);
+}
+
+// MOSTRA PENSANDO
+function mostrarPensando() {
+    const div = document.createElement('div');
+    div.className = "msg ele";
+    div.id = "pensando";
+    div.innerHTML = `<div class="etiqueta">ASTROBOT</div><span class="pensando">🔍 Pesquisando...</span>`;
+    document.getElementById('conversa').appendChild(div);
+    document.getElementById('conversa').scrollTop = 99999;
+}
+function tirarPensando() { const el = document.getElementById('pensando'); if(el) el.remove(); }
+
+// RESPOSTA
+function responder(pergunta) {
+    let res = "Pesquisei isso! É muito interessante! Pergunte mais!";
+    for (let chave in conhecimento) {
+        if (pergunta.toLowerCase().includes(chave)) { res = conhecimento[chave]; break; }
+    }
+    const conta = pergunta.match(/(\d+)\s*(mais|\+|menos|-|vezes|\*|dividido por|÷)\s*(\d+)/);
+    if (conta) {
+        let a = parseInt(conta[1]), op = conta[2], b = parseInt(conta[3]), r;
+        if (op === 'mais' || op === '+') r = a + b;
+        else if (op === 'menos' || op === '-') r = a - b;
+        else if (op === 'vezes' || op === '*') r = a * b;
+        else if ((op === 'dividido por' || op === '÷') && b !== 0) r = Math.floor(a / b);
+        if (r !== undefined) res = `${a} ${op} ${b} = ${r}`;
+    }
+    return res;
+}
+
+// ENVIAR MENSAGEM
+function processar(texto) {
+    // Mensagem do usuário
+    const eu = document.createElement('div');
+    eu.className = "msg eu"; eu.textContent = texto;
+    document.getElementById('conversa').appendChild(eu);
+
+    // Pesquisando...
+    mostrarPensando();
+    setTimeout(() => {
+        tirarPensando();
+        const res = responder(texto);
+        const ele = document.createElement('div');
+        ele.className = "msg ele";
+        ele.innerHTML = `<div class="etiqueta">ASTROBOT</div><span id="resp"></span>`;
+        document.getElementById('conversa').appendChild(ele);
+        escrever(res, document.getElementById('resp'));
+        fala(res);
+        document.getElementById('conversa').scrollTop = 99999;
+    }, 1500);
+}
+
+function enviar() {
+    const t = document.getElementById('entrada').value.trim();
+    if (!t) return;
+    document.getElementById('entrada').value = "";
+    processar(t);
+}
+document.getElementById('btnEnviar').addEventListener('click', enviar);
+document.getElementById('entrada').addEventListener('keypress', e => e.key === 'Enter' && enviar());
+
+// VOZ
+document.getElementById('btnVoz').addEventListener('click', () => {
+    usuario.modoVoz = !usuario.modoVoz;
+    const btn = document.getElementById('btnVoz');
+    btn.classList.toggle('ativo', usuario.modoVoz);
+    btn.textContent = usuario.modoVoz ? "🔊 Ouvindo" : "🔇 Texto";
+    if (usuario.modoVoz) iniciarOuvir();
+});
+function fala(texto) {
+    if (!usuario.modoVoz || !'speechSynthesis' in window) return;
+    const f = new SpeechSynthesisUtterance(texto);
+    f.lang = 'pt-BR'; f.rate = 0.85; f.pitch = 0.75;
+    speechSynthesis.speak(f);
+}
+function iniciarOuvir() {
+    if (!('webkitSpeechRecognition' in window)) return;
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new Rec(); rec.lang = 'pt-BR'; rec.continuous = true;
+    rec.onresult = (e) => {
+        let falaTexto = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) falaTexto = e.results[i][0].transcript;
+        document.getElementById('entrada').value = falaTexto;
+        if (e.results[e.results.length - 1].isFinal && falaTexto.trim()) processar(falaTexto.trim());
+    };
+    rec.onend = () => { if (usuario.modoVoz) rec.start(); };
+    rec.start();
+}
+
+// MENU
+document.getElementById('btnMenu').addEventListener('click', () => {
+    document.getElementById('menu').classList.toggle('aberto');
+});
+document.getElementById('itemSair').addEventListener('click', sair);
+
+function esconderAvisos() {
+    document.querySelectorAll('.aviso, .aviso-tentativas, .bloqueado').forEach(el => el.style.display = "none");
+}
+
+// INÍCIO — Se já estava logado
+window.addEventListener('load', () => {
+    const salvo = localStorage.getItem('astros_sessao');
+    if (salvo) {
+        usuario = JSON.parse(salvo);
+        irPrincipal();
+    }
+});
+</script>
+</body>
+</html>
